@@ -1,0 +1,147 @@
+# DIR-FT: GRAMMAR.XFST
+# XFST Code for Samoan primary stress in monomorphemes, using feet, direct approach
+# Time-stamp: <2017-03-15 16:03:39 amoebe>
+
+# Run input file to generate all possible stress patterns over heavy
+# and light syllables (P=primary, S=secondary, W = unstressed)
+
+echo << Generating language of input strings >> 
+
+source ../auxiliary/gen.xfst
+
+
+echo << Parsing into (binary) feet >> 
+
+############################
+###### PARSE INTO FEET #####
+############################
+
+# Define some auxiliary terms for clarity
+
+define Heavy [ "[" "H" "]" ];
+define Light [ "[" "L" "]" ];
+
+## A foot must be binary
+# Two LLs form a foot
+# Any heavy syllable is a foot.
+
+define ParseFoot [ [ [ ? Light ]^2 | [ ? Heavy ] ] -> "(" ... ")" ];
+
+# Try:
+# define Test [ [ {L}|{H}|{LL}|{HL}|{LLL}] .o. SWParse .o. ElevateProm .o. ParseFoot];
+# push Test;
+# lower;
+
+echo << Define restrictions on feet >> 
+
+###########################################
+###### DEFINE RESTRICTIONS ON FEET #########
+###########################################
+
+
+# A foot is a string of non-parentheses enclosed in parentheses
+
+define Foot [ "(" [ \["(" | ")"] ]*  ")" ];
+
+# Alternative:
+#define Foot [ "(" ~[$["(" | ")"]]  ")" ];
+
+
+# A primary stressed foot must be a foot and include a primary stressed syllable
+
+define PrimaryFoot [ Foot & $["P"] ];
+
+# Try:
+# define Test [ [ {L}|{H}|{LL}|{HL}|{LLL}] .o. SWParse .o. ElevateProm .o. ParseFoot .o. PrimaryFoot];
+# push Test;
+# lower;
+
+# Foot form: trochaic
+
+# SW light-light feet
+
+define WeakLight [ "W" Light ];
+
+define LLFoot [ "(" \"W" Light WeakLight ")" ];
+
+# Any heavy syllable is a foot (and must be stressed).
+
+#define HFoot [ "(" \"W" Heavy ")" ];
+#define Trochee [ LLFoot | HFoot ];
+
+# We never use HFoot again, so don't define it as a variable
+
+define Trochee [ LLFoot | "(" \"W" Heavy ")" ];
+
+echo << Define restrictions on words in terms of feet >> 
+
+#############################################
+###### RESTRICTIONS ON WORDS IN TERMS OF FEET
+#############################################
+
+# An input must terminate with a foot bearing primary stress, and
+#  that is the only foot that may receive primary stress
+
+define PrimaryFootRight [ \"P"* PrimaryFoot ];
+
+# this kills off lone L and HL final strings, since those don't have
+#any parses that end in a primary stressed foot.
+
+# define Test [ [ {L}|{H}|{LL}|{HL}|{LLL}] .o. SWParse .o. ElevateProm .o. ParseFoot .o. PrimaryFootRight];
+# push Test;
+# lower;
+
+# Every foot in an input string must be trochaic.
+# The input string may include interspersed weak lights.
+
+define TrocheesOnly [ Trochee | WeakLight ]*;
+
+# define Test [ [ {L}|{H}|{LL}|{HL}|{LLL}] .o. SWParse .o. ElevateProm .o. ParseFoot .o. TrocheesOnly];
+# push Test;
+# lower;
+
+
+# Don't have a sequence of a weak light followed by a LL foot at the
+#  beginning of the word if the LLL sequence is non-final (non-final
+#  to allow for 3L WPW).
+
+define InitialDactyl ~[ WeakLight LLFoot ?+ ];
+
+# This allows for multiple inputs for HLLLH and 7Ls, with medial
+# dactyls, and allows for WPW for a 3L word.
+
+# Try:
+# define Test [ [ {LLL}|{LLLH}|{LLLLL}|{HLLLH}|{LLLLLLL}] .o. SWParse .o. ElevateProm .o. ParseFoot .o. TrocheesOnly .o. PrimaryFootRight .o. InitialDactyl];
+# push Test;
+# lower;
+
+# Optional for readability, required for testing since I use X in the
+# gold standard/benchmark
+# Change unparsed weaks to Xs
+
+define ReplaceUnparsedX [ "W" -> "X" ||  _ [Light "("] ];
+
+
+##############################
+##############################
+#### FINAL TRANSDUCTION  #####
+##############################
+##############################
+
+define LSmo [ Gen .o. ParseFoot .o. TrocheesOnly .o. PrimaryFootRight .o. InitialDactyl .o. ReplaceUnparsedX ];
+
+
+######################
+######################
+#### TEST GRAMMAR ####
+######################
+######################
+
+
+echo << Testing expressiveness of grammar >> 
+
+source ../auxiliary/test-overgen.xfst
+
+read text < ../auxiliary/gold-output5-footed.txt;
+
+source ../auxiliary/test-undergen.xfst
