@@ -10,7 +10,7 @@ The repository contains two sub-directories:
 
 1. `xfst-code`: this contains shell scripts and xfst code to define
    the grammars and compare them to the gold standard. More details
-   are in the section [xfst code](#xfst-code), including [annotated output from a sample run](##Sample-run-for-direct-foot-code).
+   are in the section [xfst code](#xfst-code), including [annotated output from a sample run](#sample-run-for-direct-foot-code).
 2. `otsoft-files`: this contains files from runs with [OTSoft](http://www.linguistics.ucla.edu/people/hayes/otsoft/) that show
    how partial rankings were computed. More details are in the section
    [OTSoft files](#otsoft-files).
